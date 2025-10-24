@@ -1,0 +1,214 @@
+### API Testing File
+### Use REST Client extension in VS Code
+
+@baseUrl = http://localhost:3333
+@accessToken =
+@refreshToken =
+
+###############################################
+# Health Check
+###############################################
+
+### Health Check
+GET {{baseUrl}}/health
+
+### API Info
+GET {{baseUrl}}/
+
+###############################################
+# Authentication
+###############################################
+
+### Register Establishment
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "establishment": {
+    "nome": "Mercado Teste",
+    "cnpj": "12345678000190",
+    "email": "contato@mercadoteste.com",
+    "telefone": "11999999999",
+    "endereco": "Rua Exemplo, 123",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "cep": "01234567"
+  },
+  "user": {
+    "nome": "Administrador",
+    "email": "admin@mercadoteste.com",
+    "senha": "senha123456"
+  }
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@mercadoteste.com",
+  "senha": "senha123456"
+}
+
+### Extract tokens from login response (manual)
+# Copy accessToken and refreshToken from response above
+
+### Get current user
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{accessToken}}
+
+### Refresh token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###############################################
+# Products
+###############################################
+
+### Create Product
+POST {{baseUrl}}/products
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "codigo": "001",
+  "ean": "7891234567890",
+  "nome": "Produto Teste",
+  "descricao": "Descrição do produto teste",
+  "categoria": "Alimentos",
+  "unidade": "UN",
+  "precoCusto": 10.50,
+  "precoVenda": 15.90,
+  "estoque": 100,
+  "estoqueMinimo": 10,
+  "ncm": "12345678",
+  "cfop": "5102",
+  "ativo": true
+}
+
+### List Products (all)
+GET {{baseUrl}}/products
+Authorization: Bearer {{accessToken}}
+
+### List Products (with pagination)
+GET {{baseUrl}}/products?page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+### Search Products
+GET {{baseUrl}}/products?search=teste
+Authorization: Bearer {{accessToken}}
+
+### Filter by Category
+GET {{baseUrl}}/products?categoria=Alimentos
+Authorization: Bearer {{accessToken}}
+
+### Filter Active Products
+GET {{baseUrl}}/products?ativo=true
+Authorization: Bearer {{accessToken}}
+
+### Get Low Stock Products
+GET {{baseUrl}}/products/meta/low-stock
+Authorization: Bearer {{accessToken}}
+
+### Get Categories
+GET {{baseUrl}}/products/meta/categories
+Authorization: Bearer {{accessToken}}
+
+### Get Product by ID
+GET {{baseUrl}}/products/PRODUCT_ID_HERE
+Authorization: Bearer {{accessToken}}
+
+### Get Product by Code
+GET {{baseUrl}}/products/code/001
+Authorization: Bearer {{accessToken}}
+
+### Get Product by EAN
+GET {{baseUrl}}/products/ean/7891234567890
+Authorization: Bearer {{accessToken}}
+
+### Update Product
+PATCH {{baseUrl}}/products/PRODUCT_ID_HERE
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "precoVenda": 17.90,
+  "estoque": 150
+}
+
+### Update Stock (add)
+PATCH {{baseUrl}}/products/PRODUCT_ID_HERE/stock
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "quantity": 50,
+  "operation": "add"
+}
+
+### Update Stock (subtract)
+PATCH {{baseUrl}}/products/PRODUCT_ID_HERE/stock
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "quantity": 20,
+  "operation": "subtract"
+}
+
+### Update Stock (set)
+PATCH {{baseUrl}}/products/PRODUCT_ID_HERE/stock
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "quantity": 100,
+  "operation": "set"
+}
+
+### Bulk Create Products
+POST {{baseUrl}}/products/bulk
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "codigo": "002",
+      "ean": "7891234567891",
+      "nome": "Produto Teste 2",
+      "categoria": "Bebidas",
+      "unidade": "UN",
+      "precoCusto": 5.00,
+      "precoVenda": 8.90,
+      "estoque": 50
+    },
+    {
+      "codigo": "003",
+      "ean": "7891234567892",
+      "nome": "Produto Teste 3",
+      "categoria": "Limpeza",
+      "unidade": "UN",
+      "precoCusto": 7.50,
+      "precoVenda": 12.90,
+      "estoque": 75
+    }
+  ]
+}
+
+### Delete Product (soft delete)
+DELETE {{baseUrl}}/products/PRODUCT_ID_HERE
+Authorization: Bearer {{accessToken}}

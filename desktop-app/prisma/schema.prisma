@@ -1,0 +1,92 @@
+// Schema SQLite Local para Desktop App
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/database/generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./pdv.db"
+}
+
+model Config {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id              String   @id
+  establishmentId String
+  nome            String
+  email           String   @unique
+  role            String
+  token           String?
+  refreshToken    String?
+  lastSync        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Product {
+  id              String    @id
+  codigo          String    @unique
+  ean             String?
+  nome            String
+  descricao       String?
+  categoria       String?
+  unidade         String
+  precoCusto      Float
+  precoVenda      Float
+  estoque         Float
+  estoqueMinimo   Float?
+  ncm             String?
+  cest            String?
+  cfop            String?
+  ativo           Boolean
+  synced          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  saleItems       SaleItem[]
+}
+
+model Sale {
+  id             String     @id
+  numero         Int        @unique
+  data           DateTime
+  subtotal       Float
+  desconto       Float
+  total          Float
+  formaPagamento String
+  observacoes    String?
+  status         String
+  synced         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  items          SaleItem[]
+}
+
+model SaleItem {
+  id            String  @id
+  saleId        String
+  productId     String
+  quantidade    Float
+  precoUnitario Float
+  subtotal      Float
+  desconto      Float
+  sale          Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product       Product @relation(fields: [productId], references: [id])
+}
+
+model SyncQueue {
+  id        String   @id @default(uuid())
+  type      String   // 'product', 'sale'
+  action    String   // 'create', 'update', 'delete'
+  data      String   // JSON
+  synced    Boolean  @default(false)
+  retries   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
