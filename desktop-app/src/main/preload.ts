@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('electron', {
   app: {
     getPath: (name: string) => ipcRenderer.invoke('app:getPath', name),
   },
+  invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
+  print: (content: string) => ipcRenderer.invoke('print', content),
 })
 
 // Type definitions for window.electron
@@ -23,6 +25,8 @@ export interface IElectronAPI {
   app: {
     getPath: (name: string) => Promise<string>
   }
+  invoke: (channel: string, ...args: any[]) => Promise<any>
+  print: (content: string) => Promise<boolean>
 }
 
 declare global {

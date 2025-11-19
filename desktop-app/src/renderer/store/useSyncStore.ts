@@ -1,9 +1,5 @@
 import { create } from 'zustand'
 import api from '../lib/api'
-import { PrismaClient } from '@prisma/client'
-
-// Note: In Electron, Prisma should be used in main process
-// This is a simplified version - in production, use IPC to communicate with main process
 
 interface SyncState {
   isSyncing: boolean
@@ -38,21 +34,23 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     set({ isSyncing: true })
 
     try {
-      // Get local products that need sync (via IPC in production)
+      // Get local products that need sync (via IPC)
       const localProducts = await window.electron?.invoke('get-pending-products') || []
 
       if (localProducts.length > 0) {
         // Push local changes to server
-        await api.post('/sync/products/push', { products: localProducts })
+        await api.post('/sync/products', { products: localProducts })
       }
 
       // Pull remote changes
-      const { data } = await api.post('/sync/products/pull', {
-        lastSyncAt: get().lastSyncAt
+      const { data } = await api.get('/sync/products', {
+        params: {
+          lastSyncAt: get().lastSyncAt
+        }
       })
 
-      // Save to local DB (via IPC in production)
-      if (data.products.length > 0) {
+      // Save to local DB (via IPC)
+      if (data.products && data.products.length > 0) {
         await window.electron?.invoke('save-products', data.products)
       }
 
@@ -74,21 +72,23 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     set({ isSyncing: true })
 
     try {
-      // Get local sales that need sync
+      // Get local sales that need sync (via IPC)
       const localSales = await window.electron?.invoke('get-pending-sales') || []
 
       if (localSales.length > 0) {
         // Push local sales to server
-        await api.post('/sync/sales/push', { sales: localSales })
+        await api.post('/sync/sales', { sales: localSales })
       }
 
       // Pull remote sales
-      const { data } = await api.post('/sync/sales/pull', {
-        lastSyncAt: get().lastSyncAt
+      const { data } = await api.get('/sync/sales', {
+        params: {
+          lastSyncAt: get().lastSyncAt
+        }
       })
 
-      // Save to local DB
-      if (data.sales.length > 0) {
+      // Save to local DB (via IPC)
+      if (data.sales && data.sales.length > 0) {
         await window.electron?.invoke('save-sales', data.sales)
       }
 

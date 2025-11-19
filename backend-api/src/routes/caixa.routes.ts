@@ -1,10 +1,10 @@
 import { FastifyInstance } from 'fastify'
 import { caixaController } from '../controllers/caixa.controller'
-import { authMiddleware } from '../middlewares/auth.middleware'
+import { authenticate } from '../middlewares/auth.middleware'
 
 export async function caixaRoutes(app: FastifyInstance) {
   // Aplicar autenticação em todas as rotas
-  app.addHook('onRequest', authMiddleware)
+  app.addHook('onRequest', authenticate)
 
   // POST /caixa/abrir - Abrir caixa
   app.post('/abrir', caixaController.abrirCaixa)
