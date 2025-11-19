@@ -10,18 +10,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Represents a business establishment (store/company/franchise)
+/// Stores core business information and serves as the main tenant for multi-tenant architecture
 model Establishment {
+  /// Unique identifier (UUID)
   id        String   @id @default(uuid())
+  /// Business name
   nome      String
+  /// CNPJ tax identification number (unique per establishment)
   cnpj      String   @unique
+  /// Business email address (unique)
   email     String   @unique
+  /// Business phone number
   telefone  String?
+  /// Full business address
   endereco  String?
+  /// City where the establishment is located
   cidade    String?
+  /// State code (UF) of the establishment
   estado    String?
+  /// Postal code (CEP)
   cep       String?
+  /// Status indicator - whether establishment is active
   ativo     Boolean  @default(true)
+  /// Timestamp of record creation
   createdAt DateTime @default(now())
+  /// Timestamp of last update
   updatedAt DateTime @updatedAt
 
   // Relations
@@ -34,15 +48,26 @@ model Establishment {
   @@map("establishments")
 }
 
+/// Represents a user account in the system
+/// Each user belongs to an establishment and has role-based access control
 model User {
+  /// Unique identifier (UUID)
   id              String   @id @default(uuid())
+  /// Foreign key to associated establishment
   establishmentId String
+  /// User's full name
   nome            String
+  /// User's email address (unique across system)
   email           String   @unique
+  /// Hashed password for authentication
   senha           String
+  /// User role for access control (ADMIN or OPERADOR)
   role            UserRole @default(OPERADOR)
+  /// Status indicator - whether user account is active
   ativo           Boolean  @default(true)
+  /// Timestamp of record creation
   createdAt       DateTime @default(now())
+  /// Timestamp of last update
   updatedAt       DateTime @updatedAt
 
   // Relations
@@ -59,11 +84,18 @@ enum UserRole {
   OPERADOR
 }
 
+/// Represents a refresh token for JWT authentication
+/// Used to issue new access tokens without requiring user credentials
 model RefreshToken {
+  /// Unique identifier (UUID)
   id        String   @id @default(uuid())
+  /// Foreign key to the associated user
   userId    String
+  /// The refresh token string (unique)
   token     String   @unique
+  /// Token expiration datetime
   expiresAt DateTime
+  /// Timestamp of token creation
   createdAt DateTime @default(now())
 
   // Relations
@@ -72,24 +104,44 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+/// Represents a product or item that can be sold
+/// Contains pricing, inventory, and fiscal information for the establishment
 model Product {
+  /// Unique identifier (UUID)
   id              String   @id @default(uuid())
+  /// Foreign key to the associated establishment
   establishmentId String
+  /// Product code/SKU (internal reference)
   codigo          String
+  /// European Article Number (barcode)
   ean             String?
+  /// Product name
   nome            String
+  /// Product description
   descricao       String?
+  /// Product category for organization
   categoria       String?
+  /// Unit of measurement (default: UN for unit)
   unidade         String   @default("UN")
+  /// Cost price per unit in decimal format
   precoCusto      Decimal  @default(0) @db.Decimal(10, 2)
+  /// Sale price per unit in decimal format
   precoVenda      Decimal  @db.Decimal(10, 2)
+  /// Current stock quantity
   estoque         Decimal  @default(0) @db.Decimal(10, 3)
+  /// Minimum stock threshold for alerts
   estoqueMinimo   Decimal? @db.Decimal(10, 3)
+  /// NCM code for tax classification
   ncm             String?
+  /// CEST code for substitute tax
   cest            String?
+  /// CFOP code for fiscal operation
   cfop            String?
+  /// Status indicator - whether product is active
   ativo           Boolean  @default(true)
+  /// Timestamp of record creation
   createdAt       DateTime @default(now())
+  /// Timestamp of last update
   updatedAt       DateTime @updatedAt
 
   // Relations
@@ -102,20 +154,36 @@ model Product {
   @@map("products")
 }
 
+/// Represents a sales transaction at the point of sale (POS)
+/// Contains aggregated sale data with individual items stored in SaleItem
 model Sale {
+  /// Unique identifier (UUID)
   id              String         @id @default(uuid())
+  /// Foreign key to the associated establishment
   establishmentId String
+  /// Foreign key to the user who processed the sale
   userId          String
+  /// Sequential sale number within the establishment
   numero          Int
+  /// Date and time when the sale occurred
   data            DateTime       @default(now())
+  /// Sale subtotal before discounts
   subtotal        Decimal        @db.Decimal(10, 2)
+  /// Total discount amount applied to the sale
   desconto        Decimal        @default(0) @db.Decimal(10, 2)
+  /// Final sale total after discounts
   total           Decimal        @db.Decimal(10, 2)
+  /// Sale status (CONCLUIDA or CANCELADA)
   status          SaleStatus     @default(CONCLUIDA)
+  /// Payment method used (cash, card, check, etc)
   formaPagamento  String
+  /// Whether sale has been synchronized with backend
   sincronizado    Boolean        @default(false)
+  /// Additional notes or observations about the sale
   observacoes     String?
+  /// Timestamp of record creation
   createdAt       DateTime       @default(now())
+  /// Timestamp of last update
   updatedAt       DateTime       @updatedAt
 
   // Relations
@@ -133,13 +201,22 @@ enum SaleStatus {
   CANCELADA
 }
 
+/// Represents an individual item line in a sale
+/// Each item records product sold, quantity, and pricing details
 model SaleItem {
+  /// Unique identifier (UUID)
   id             String  @id @default(uuid())
+  /// Foreign key to the associated sale
   saleId         String
+  /// Foreign key to the product being sold
   productId      String
+  /// Quantity of the product sold
   quantidade     Decimal @db.Decimal(10, 3)
+  /// Unit price at time of sale
   precoUnitario  Decimal @db.Decimal(10, 2)
+  /// Line subtotal (quantity × unit price)
   subtotal       Decimal @db.Decimal(10, 2)
+  /// Discount amount applied to this line
   desconto       Decimal @default(0) @db.Decimal(10, 2)
 
   // Relations
@@ -149,19 +226,34 @@ model SaleItem {
   @@map("sale_items")
 }
 
+/// Represents an imported Electronic Invoice (NF-e)
+/// Stores fiscal invoice data imported from suppliers for audit and tax compliance
 model NfeImport {
+  /// Unique identifier (UUID)
   id              String   @id @default(uuid())
+  /// Foreign key to the associated establishment
   establishmentId String
+  /// NF-e access key (unique identifier from SEFAZ)
   chaveAcesso     String   @unique
+  /// Invoice number from the supplier
   numero          String
+  /// Invoice series from the supplier
   serie           String
+  /// NF-e model (default: 55 for standard electronic invoice)
   modelo          String   @default("55")
+  /// Supplier's CNPJ
   fornecedorCnpj  String
+  /// Supplier's company name
   fornecedorNome  String
+  /// Invoice issue date
   dataEmissao     DateTime
+  /// Total invoice value
   valorTotal      Decimal  @db.Decimal(10, 2)
+  /// Complete NF-e XML content for records
   xmlContent      String   @db.Text
+  /// Number of products contained in the invoice
   produtosCount   Int      @default(0)
+  /// Timestamp of import record creation
   createdAt       DateTime @default(now())
 
   // Relations
@@ -171,17 +263,30 @@ model NfeImport {
   @@map("nfe_imports")
 }
 
+/// Represents a cash register movement/transaction
+/// Tracks all cash drawer activities including opening, closing, withdrawals, and deposits
 model CaixaMovimentacao {
+  /// Unique identifier (UUID)
   id              String              @id @default(uuid())
+  /// Foreign key to the associated establishment
   establishmentId String
+  /// Foreign key to the user who performed the movement
   userId          String
+  /// Type of movement (ABERTURA, FECHAMENTO, SANGRIA, REFORCO)
   tipo            TipoMovimentacao
+  /// Amount involved in the movement
   valor           Decimal             @db.Decimal(10, 2)
+  /// Previous cash balance
   saldoAnterior   Decimal             @default(0) @db.Decimal(10, 2)
+  /// Current cash balance after movement
   saldoAtual      Decimal             @db.Decimal(10, 2)
+  /// Additional observations about the movement
   observacoes     String?
+  /// Whether the cash drawer is currently open
   aberto          Boolean             @default(false)
+  /// Date and time of the movement
   dataHora        DateTime            @default(now())
+  /// Timestamp of record creation
   createdAt       DateTime            @default(now())
 
   // Relations

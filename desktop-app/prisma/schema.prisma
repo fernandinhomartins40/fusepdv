@@ -10,83 +10,154 @@ datasource db {
   url      = "file:./pdv.db"
 }
 
+/// Stores application configuration settings
+/// Key-value pairs for local application settings and preferences
 model Config {
+  /// Unique identifier (UUID)
   id        String   @id @default(uuid())
+  /// Configuration key (unique identifier for the setting)
   key       String   @unique
+  /// Configuration value
   value     String
+  /// Timestamp of last configuration update
   updatedAt DateTime @updatedAt
 }
 
+/// Represents a local user account cached from the backend
+/// Stores user data and authentication tokens for offline access
 model User {
+  /// Unique identifier synced from backend
   id              String   @id
+  /// Associated establishment ID from backend
   establishmentId String
+  /// User's full name
   nome            String
+  /// User's email address (unique)
   email           String   @unique
+  /// User role from backend (ADMIN or OPERADOR)
   role            String
+  /// JWT access token for API authentication
   token           String?
+  /// Refresh token for obtaining new access tokens
   refreshToken    String?
+  /// Timestamp of last synchronization with backend
   lastSync        DateTime?
+  /// Timestamp of record creation
   createdAt       DateTime @default(now())
+  /// Timestamp of last update
   updatedAt       DateTime @updatedAt
 }
 
+/// Represents a locally cached product
+/// Products synced from backend for offline POS operations
 model Product {
+  /// Unique identifier synced from backend
   id              String    @id
+  /// Product code/SKU (unique)
   codigo          String    @unique
+  /// European Article Number (barcode)
   ean             String?
+  /// Product name
   nome            String
+  /// Product description
   descricao       String?
+  /// Product category for organization
   categoria       String?
+  /// Unit of measurement
   unidade         String
+  /// Cost price per unit
   precoCusto      Float
+  /// Sale price per unit
   precoVenda      Float
+  /// Current stock quantity
   estoque         Float
+  /// Minimum stock threshold for alerts
   estoqueMinimo   Float?
+  /// NCM code for tax classification
   ncm             String?
+  /// CEST code for substitute tax
   cest            String?
+  /// CFOP code for fiscal operation
   cfop            String?
+  /// Status indicator - whether product is active
   ativo           Boolean
+  /// Whether this product has been synced with backend
   synced          Boolean   @default(false)
+  /// Timestamp of record creation
   createdAt       DateTime  @default(now())
+  /// Timestamp of last update
   updatedAt       DateTime  @updatedAt
   saleItems       SaleItem[]
 }
 
+/// Represents a locally cached sales transaction
+/// Sales created offline, queued for syncing to backend
 model Sale {
+  /// Unique identifier synced from backend (or local UUID)
   id             String     @id
+  /// Sequential sale number (unique)
   numero         Int        @unique
+  /// Date and time of the sale
   data           DateTime
+  /// Sale subtotal before discounts
   subtotal       Float
+  /// Total discount amount
   desconto       Float
+  /// Final sale total after discounts
   total          Float
+  /// Payment method used
   formaPagamento String
+  /// Additional notes or observations about the sale
   observacoes    String?
+  /// Sale status (CONCLUIDA, CANCELADA, etc)
   status         String
+  /// Whether this sale has been synced with backend
   synced         Boolean    @default(false)
+  /// Timestamp of record creation
   createdAt      DateTime   @default(now())
+  /// Timestamp of last update
   updatedAt      DateTime   @updatedAt
   items          SaleItem[]
 }
 
+/// Represents an item line in a local sale
+/// Links products to sales with quantity and pricing information
 model SaleItem {
+  /// Unique identifier synced from backend (or local UUID)
   id            String  @id
+  /// Foreign key to the associated sale
   saleId        String
+  /// Foreign key to the product being sold
   productId     String
+  /// Quantity of the product sold
   quantidade    Float
+  /// Unit price at time of sale
   precoUnitario Float
+  /// Line subtotal (quantity × unit price)
   subtotal      Float
+  /// Discount amount applied to this line
   desconto      Float
   sale          Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product       Product @relation(fields: [productId], references: [id])
 }
 
+/// Represents a queued data synchronization task
+/// Tracks pending changes that need to be synced to the backend server
 model SyncQueue {
+  /// Unique identifier (UUID)
   id        String   @id @default(uuid())
-  type      String   // 'product', 'sale'
-  action    String   // 'create', 'update', 'delete'
-  data      String   // JSON
+  /// Type of entity being synced ('product', 'sale', 'user', etc)
+  type      String
+  /// Action to perform ('create', 'update', 'delete')
+  action    String
+  /// JSON data for the synchronization payload
+  data      String
+  /// Whether this sync operation has been completed
   synced    Boolean  @default(false)
+  /// Number of retry attempts made for failed syncs
   retries   Int      @default(0)
+  /// Timestamp of queue entry creation
   createdAt DateTime @default(now())
+  /// Timestamp of last update
   updatedAt DateTime @updatedAt
 }

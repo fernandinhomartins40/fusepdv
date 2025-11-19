@@ -1,6 +1,7 @@
 import { prisma } from '../database/prisma'
 import { nfeParserService } from '../utils/nfe-parser/nfe-parser.service'
 import type { NfeParsedResult } from '../types/nfe.types'
+import { websocketService } from './websocket.service'
 
 export class NfeService {
   /**
@@ -42,6 +43,8 @@ export class NfeService {
         produtosCount: parsed.totalProdutos,
       },
     })
+
+    websocketService.emitNfeImported(establishmentId, nfeImport)
 
     return nfeImport
   }

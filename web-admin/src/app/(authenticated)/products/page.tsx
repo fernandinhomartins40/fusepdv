@@ -14,7 +14,7 @@ import {
   SortingState,
   ColumnFiltersState,
 } from '@tanstack/react-table'
-import { Search, Edit, Trash2, Plus, Download } from 'lucide-react'
+import { Search, Edit, Trash2, Plus, Download, X } from 'lucide-react'
 
 interface Product {
   id: string
@@ -35,6 +35,11 @@ export default function ProductsPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editFormData, setEditFormData] = useState<Partial<Product>>({})
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const columns: ColumnDef<Product>[] = [
     {
@@ -169,8 +174,51 @@ export default function ProductsPage() {
   }
 
   const handleEdit = (product: Product) => {
-    // TODO: Implementar modal de edição
-    console.log('Editar produto:', product)
+    setEditingProduct(product)
+    setEditFormData(product)
+    setShowEditModal(true)
+    setEditError(null)
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setEditingProduct(null)
+    setEditFormData({})
+    setEditError(null)
+  }
+
+  const handleEditFormChange = (field: keyof Product, value: any) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return
+
+    setEditLoading(true)
+    setEditError(null)
+
+    try {
+      // Validate required fields
+      if (!editFormData.codigo || !editFormData.nome || !editFormData.unidade) {
+        setEditError('Código, Nome e Unidade são obrigatórios')
+        setEditLoading(false)
+        return
+      }
+
+      await api.put(`/products/${editingProduct.id}`, editFormData)
+
+      // Update the products list
+      await loadProducts()
+      handleCloseEditModal()
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error)
+      setEditError('Erro ao atualizar produto. Tente novamente.')
+    } finally {
+      setEditLoading(false)
+    }
   }
 
   const handleDelete = async (product: Product) => {
@@ -326,6 +374,176 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-lg bg-white shadow-lg">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b p-6">
+              <h2 className="text-xl font-bold">Editar Produto</h2>
+              <button
+                onClick={handleCloseEditModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4 p-6">
+              {editError && (
+                <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+                  {editError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Código */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Código <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.codigo || ''}
+                    onChange={(e) => handleEditFormChange('codigo', e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* EAN */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    EAN
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.ean || ''}
+                    onChange={(e) => handleEditFormChange('ean', e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Nome */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Nome <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.nome || ''}
+                    onChange={(e) => handleEditFormChange('nome', e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Categoria */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Categoria
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.categoria || ''}
+                    onChange={(e) => handleEditFormChange('categoria', e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Unidade */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Unidade <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.unidade || ''}
+                    onChange={(e) => handleEditFormChange('unidade', e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Preço Custo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Preço Custo
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.precoCusto || ''}
+                    onChange={(e) =>
+                      handleEditFormChange('precoCusto', parseFloat(e.target.value) || 0)
+                    }
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Preço Venda */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Preço Venda
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.precoVenda || ''}
+                    onChange={(e) =>
+                      handleEditFormChange('precoVenda', parseFloat(e.target.value) || 0)
+                    }
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Estoque */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Estoque
+                  </label>
+                  <input
+                    type="number"
+                    value={editFormData.estoque || ''}
+                    onChange={(e) => handleEditFormChange('estoque', parseInt(e.target.value) || 0)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Ativo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    value={editFormData.ativo ? 'true' : 'false'}
+                    onChange={(e) => handleEditFormChange('ativo', e.target.value === 'true')}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="true">Ativo</option>
+                    <option value="false">Inativo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex gap-3 border-t p-6">
+              <button
+                onClick={handleCloseEditModal}
+                disabled={editLoading}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={editLoading}
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {editLoading ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

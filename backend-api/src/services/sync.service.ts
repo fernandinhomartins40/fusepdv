@@ -1,5 +1,6 @@
 import { prisma } from '../database/prisma'
 import { websocketService } from './websocket.service'
+import { logger } from '../utils/logger'
 import type { SyncProductsInput, SyncSalesInput } from '../types/sync.types'
 
 export class SyncService {
@@ -73,7 +74,7 @@ export class SyncService {
         websocketService.emitProductUpdated(establishmentId, product)
       } catch (error) {
         errors++
-        console.error(`Erro ao sincronizar produto ${product.codigo}:`, error)
+        logger.error(`Erro ao sincronizar produto ${product.codigo}:`, error)
       }
     }
 
@@ -150,7 +151,7 @@ export class SyncService {
         websocketService.emitNewSale(establishmentId, newSale)
       } catch (error) {
         errors++
-        console.error(`Erro ao sincronizar venda #${sale.numero}:`, error)
+        logger.error(`Erro ao sincronizar venda #${sale.numero}:`, error)
       }
     }
 

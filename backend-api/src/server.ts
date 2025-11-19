@@ -1,8 +1,13 @@
 import 'dotenv/config'
+// Import request types to ensure FastifyRequest is properly extended globally
+import './types/request.types'
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
+import rateLimit from '@fastify/rate-limit'
+import swagger from '@fastify/swagger'
+import swaggerUI from '@fastify/swagger-ui'
 import { authRoutes } from './routes/auth.routes'
 import { productRoutes } from './routes/product.routes'
 import { nfeRoutes } from './routes/nfe.routes'
@@ -12,19 +17,18 @@ import { syncRoutes } from './routes/sync.routes'
 import { caixaRoutes } from './routes/caixa.routes'
 import { websocketService } from './services/websocket.service'
 import socketio from 'fastify-socket.io'
+import { logger } from './utils/logger'
+import { errorHandler } from './utils/error-handler'
 
 const fastify = Fastify({
-  logger: {
-    level: process.env.NODE_ENV === 'development' ? 'info' : 'error',
-    transport: process.env.NODE_ENV === 'development' ? {
-      target: 'pino-pretty',
-      options: {
-        translateTime: 'HH:MM:ss Z',
-        ignore: 'pid,hostname',
-      },
-    } : undefined,
-  },
+  logger,
+  disableRequestLogging: false,
+  requestIdHeader: 'x-request-id',
+  requestIdLogLabel: 'reqId',
 })
+
+// Register error handler
+fastify.setErrorHandler(errorHandler)
 
 async function start() {
   try {
@@ -44,6 +48,19 @@ async function start() {
       },
     })
 
+    // Registrar Rate Limiting - Global default (100 requests per minute)
+    await fastify.register(rateLimit, {
+      max: 100,
+      timeWindow: '1 minute',
+      cache: 10000, // number of tokens to store per IP
+      allowList: [], // Add IPs to bypass rate limiting if needed
+      redis: undefined, // Can be used with Redis for distributed systems
+      skip: (request) => {
+        // Skip rate limiting for health checks
+        return request.url === '/health'
+      },
+    })
+
     // Registrar WebSocket
     await fastify.register(socketio, {
       cors: {
@@ -52,11 +69,45 @@ async function start() {
       },
     })
 
+    // Registrar Swagger
+    await fastify.register(swagger, {
+      swagger: {
+        info: {
+          title: 'PDV Backend API',
+          description: 'API para Sistema PDV com importação de NF-e',
+          version: '1.0.0',
+        },
+        host: `${process.env.HOST || 'localhost'}:${process.env.PORT || 3333}`,
+        schemes: ['http', 'https'],
+        consumes: ['application/json'],
+        produces: ['application/json'],
+        securityDefinitions: {
+          apiKey: {
+            type: 'apiKey',
+            name: 'authorization',
+            in: 'header',
+          },
+        },
+      },
+    })
+
+    // Registrar Swagger UI
+    await fastify.register(swaggerUI, {
+      routePrefix: '/docs',
+    })
+
     // Inicializar WebSocket service
     websocketService.init(fastify)
 
-    // Registrar rotas
-    await fastify.register(authRoutes, { prefix: '/auth' })
+    // Registrar rotas com Rate Limiting específico para Auth
+    // Auth routes - Stricter limit (10 requests per minute)
+    await fastify.register(async (fastifyInstance) => {
+      await fastifyInstance.register(rateLimit, {
+        max: 10,
+        timeWindow: '1 minute',
+      })
+      await fastifyInstance.register(authRoutes)
+    }, { prefix: '/auth' })
     await fastify.register(productRoutes, { prefix: '/products' })
     await fastify.register(nfeRoutes, { prefix: '/nfe' })
     await fastify.register(saleRoutes, { prefix: '/sales' })
@@ -88,20 +139,28 @@ async function start() {
 
     await fastify.listen({ port, host })
 
-    console.log(`\n🚀 Servidor rodando em http://${host}:${port}`)
-    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`)
-    console.log(`\n📚 Documentação:`)
-    console.log(`   - Health: http://localhost:${port}/health`)
-    console.log(`   - Auth: http://localhost:${port}/auth`)
-    console.log(`   - Establishment: http://localhost:${port}/establishment`)
-    console.log(`   - Products: http://localhost:${port}/products`)
-    console.log(`   - NF-e: http://localhost:${port}/nfe`)
-    console.log(`   - Sales: http://localhost:${port}/sales`)
-    console.log(`   - Caixa: http://localhost:${port}/caixa`)
-    console.log(`   - Sync: http://localhost:${port}/sync`)
-    console.log(`\n📡 WebSocket: ws://localhost:${port}`)
+    logger.info({
+      msg: 'Server started successfully',
+      url: `http://${host}:${port}`,
+      env: process.env.NODE_ENV || 'development',
+      endpoints: {
+        health: '/health',
+        auth: '/auth',
+        establishment: '/establishment',
+        products: '/products',
+        nfe: '/nfe',
+        sales: '/sales',
+        caixa: '/caixa',
+        sync: '/sync',
+      },
+      documentation: {
+        swaggerUI: `http://${host}:${port}/docs`,
+        swaggerJSON: `http://${host}:${port}/docs/json`,
+      },
+      websocket: `ws://localhost:${port}`,
+    })
   } catch (error) {
-    fastify.log.error(error)
+    logger.error({ err: error }, 'Failed to start server')
     process.exit(1)
   }
 }
@@ -110,8 +169,9 @@ async function start() {
 const signals = ['SIGINT', 'SIGTERM']
 signals.forEach((signal) => {
   process.on(signal, async () => {
-    console.log(`\n${signal} received, closing server...`)
+    logger.info(`${signal} received, closing server gracefully...`)
     await fastify.close()
+    logger.info('Server closed successfully')
     process.exit(0)
   })
 })

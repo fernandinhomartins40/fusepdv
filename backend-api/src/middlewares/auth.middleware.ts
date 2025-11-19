@@ -1,12 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import type { TokenPayload } from '../types/auth.types'
-
-// Declaração de tipos para adicionar user ao request
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: TokenPayload
-  }
-}
+// Request types module declaration is loaded globally from server.ts
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
   try {

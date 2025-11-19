@@ -1,6 +1,7 @@
 import { prisma } from '../database/prisma'
 import type { CreateSaleInput, SalesReportQuery } from '../types/sale.types'
 import { Prisma } from '@prisma/client'
+import { websocketService } from './websocket.service'
 
 export class SaleService {
   /**
@@ -112,6 +113,8 @@ export class SaleService {
 
       return newSale
     })
+
+    websocketService.emitNewSale(establishmentId, sale)
 
     return sale
   }
@@ -274,6 +277,8 @@ export class SaleService {
 
       return updated
     })
+
+    websocketService.emitSaleCanceled(establishmentId, id)
 
     return canceledSale
   }
