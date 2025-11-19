@@ -9,6 +9,7 @@ import { nfeRoutes } from './routes/nfe.routes'
 import { saleRoutes} from './routes/sale.routes'
 import { establishmentRoutes } from './routes/establishment.routes'
 import { syncRoutes } from './routes/sync.routes'
+import { caixaRoutes } from './routes/caixa.routes'
 import { websocketService } from './services/websocket.service'
 import socketio from 'fastify-socket.io'
 
@@ -61,6 +62,7 @@ async function start() {
     await fastify.register(saleRoutes, { prefix: '/sales' })
     await fastify.register(establishmentRoutes, { prefix: '/establishment' })
     await fastify.register(syncRoutes, { prefix: '/sync' })
+    await fastify.register(caixaRoutes, { prefix: '/caixa' })
 
     // Health check
     fastify.get('/health', async () => {
@@ -95,6 +97,7 @@ async function start() {
     console.log(`   - Products: http://localhost:${port}/products`)
     console.log(`   - NF-e: http://localhost:${port}/nfe`)
     console.log(`   - Sales: http://localhost:${port}/sales`)
+    console.log(`   - Caixa: http://localhost:${port}/caixa`)
     console.log(`   - Sync: http://localhost:${port}/sync`)
     console.log(`\n📡 WebSocket: ws://localhost:${port}`)
   } catch (error) {

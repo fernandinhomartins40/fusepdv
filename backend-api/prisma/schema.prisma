@@ -177,14 +177,19 @@ model CaixaMovimentacao {
   userId          String
   tipo            TipoMovimentacao
   valor           Decimal             @db.Decimal(10, 2)
-  descricao       String?
-  data            DateTime            @default(now())
+  saldoAnterior   Decimal             @default(0) @db.Decimal(10, 2)
+  saldoAtual      Decimal             @db.Decimal(10, 2)
+  observacoes     String?
+  aberto          Boolean             @default(false)
+  dataHora        DateTime            @default(now())
+  createdAt       DateTime            @default(now())
 
   // Relations
   establishment Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
   user          User          @relation(fields: [userId], references: [id])
 
-  @@index([establishmentId, data])
+  @@index([establishmentId, dataHora])
+  @@index([establishmentId, aberto])
   @@map("caixa_movimentacoes")
 }
 

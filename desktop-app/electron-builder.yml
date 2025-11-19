@@ -1,0 +1,95 @@
+appId: com.pdvsystem.desktop
+productName: PDV System
+copyright: Copyright © 2024
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - package.json
+  - node_modules/**/*
+  - "!node_modules/@prisma/engines/**/*"
+  - "!node_modules/prisma/**/*"
+
+extraResources:
+  - from: "prisma/schema.prisma"
+    to: "prisma/schema.prisma"
+
+asarUnpack:
+  - "**/@prisma/client/**/*"
+  - "**/prisma/**/*"
+
+# Configuração para Windows
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: PDV System
+  perMachine: false
+  allowElevation: true
+
+# Configuração para macOS
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.business
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  title: ${productName} ${version}
+  icon: build/icon.icns
+  contents:
+    - x: 410
+      y: 150
+      type: link
+      path: /Applications
+    - x: 130
+      y: 150
+      type: file
+
+# Configuração para Linux
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Office
+  icon: build/icons
+  synopsis: Sistema PDV com importação de NF-e
+  description: Sistema completo de Ponto de Venda com suporte a importação de Notas Fiscais Eletrônicas
+
+appImage:
+  license: MIT
+
+deb:
+  depends:
+    - gconf2
+    - gconf-service
+    - libnotify4
+    - libappindicator1
+    - libxtst6
+    - libnss3

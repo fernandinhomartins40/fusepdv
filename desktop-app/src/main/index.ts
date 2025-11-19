@@ -13,12 +13,13 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
+      preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
     titleBarStyle: 'default',
     frame: true,
+    icon: path.join(__dirname, '../../build/icon.png'),
   })
 
   // Load app

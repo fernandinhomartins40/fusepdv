@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo gradiente -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Círculo de fundo -->
+  <circle cx="128" cy="128" r="128" fill="url(#grad)"/>
+
+  <!-- Ícone PDV (caixa registradora estilizada) -->
+  <g transform="translate(64, 64)">
+    <!-- Tela/Display -->
+    <rect x="25.6" y="12.8" width="76.8" height="38.4"
+          fill="#fff" rx="5.12"/>
+
+    <!-- Corpo da caixa -->
+    <rect x="12.8" y="56.32" width="102.4" height="51.2"
+          fill="#fff" rx="5.12"/>
+
+    <!-- Gaveta -->
+    <rect x="12.8" y="110.08" width="102.4" height="20.48"
+          fill="#E0E7FF" rx="2.56"/>
+
+    <!-- Botões (grid 3x2) -->
+    <rect x="20.48" y="69.12"
+               width="10.24" height="10.24"
+               fill="#818CF8" rx="1.28"/>
+<rect x="53.760000000000005" y="69.12"
+               width="10.24" height="10.24"
+               fill="#818CF8" rx="1.28"/>
+<rect x="20.48" y="81.92"
+               width="10.24" height="10.24"
+               fill="#818CF8" rx="1.28"/>
+<rect x="53.760000000000005" y="81.92"
+               width="10.24" height="10.24"
+               fill="#818CF8" rx="1.28"/>
+<rect x="20.48" y="94.72"
+               width="10.24" height="10.24"
+               fill="#818CF8" rx="1.28"/>
+<rect x="53.760000000000005" y="94.72"
+               width="10.24" height="10.24"
+               fill="#818CF8" rx="1.28"/>
+  </g>
+
+  <!-- Texto PDV -->
+  <text x="128" y="217.6"
+        font-family="Arial, sans-serif"
+        font-size="30.72"
+        font-weight="bold"
+        fill="#fff"
+        text-anchor="middle">PDV</text>
+</svg>
