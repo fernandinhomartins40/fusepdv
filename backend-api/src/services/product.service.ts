@@ -1,6 +1,7 @@
 import { prisma } from '../database/prisma'
 import type { CreateProductInput, UpdateProductInput, ProductFilter } from '../types/product.types'
 import { Prisma } from '@prisma/client'
+import { websocketService } from './websocket.service'
 
 export class ProductService {
   async create(establishmentId: string, data: CreateProductInput) {
@@ -32,12 +33,16 @@ export class ProductService {
       }
     }
 
-    return await prisma.product.create({
+    const product = await prisma.product.create({
       data: {
         ...data,
         establishmentId,
       },
     })
+
+    websocketService.emitProductCreated(establishmentId, product)
+
+    return product
   }
 
   async bulkCreate(establishmentId: string, products: CreateProductInput[]) {
@@ -190,10 +195,14 @@ export class ProductService {
       }
     }
 
-    return await prisma.product.update({
+    const product = await prisma.product.update({
       where: { id },
       data,
     })
+
+    websocketService.emitProductUpdated(establishmentId, product)
+
+    return product
   }
 
   async delete(id: string, establishmentId: string) {
@@ -201,10 +210,14 @@ export class ProductService {
     await this.findById(id, establishmentId)
 
     // Soft delete - apenas marca como inativo
-    return await prisma.product.update({
+    const deletedProduct = await prisma.product.update({
       where: { id },
       data: { ativo: false },
     })
+
+    websocketService.emitProductDeleted(establishmentId, id)
+
+    return deletedProduct
   }
 
   async getCategories(establishmentId: string) {

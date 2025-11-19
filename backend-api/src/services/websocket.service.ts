@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { FastifyInstance } from 'fastify'
+import { logger } from '../utils/logger'
 
 export class WebSocketService {
   private io?: SocketIOServer
@@ -9,16 +10,16 @@ export class WebSocketService {
     this.io = fastify.io
 
     this.io?.on('connection', (socket) => {
-      console.log(`📡 Cliente conectado: ${socket.id}`)
+      logger.info(`📡 Cliente conectado: ${socket.id}`)
 
       // Quando cliente se autentica e informa seu establishmentId
       socket.on('authenticate', (establishmentId: string) => {
         socket.join(`establishment:${establishmentId}`)
-        console.log(`🔐 Cliente ${socket.id} autenticado no establishment ${establishmentId}`)
+        logger.info(`🔐 Cliente ${socket.id} autenticado no establishment ${establishmentId}`)
       })
 
       socket.on('disconnect', () => {
-        console.log(`📡 Cliente desconectado: ${socket.id}`)
+        logger.info(`📡 Cliente desconectado: ${socket.id}`)
       })
     })
   }
@@ -70,6 +71,41 @@ export class WebSocketService {
    */
   emitSyncStatus(establishmentId: string, status: 'syncing' | 'synced' | 'error', message?: string) {
     this.io?.to(`establishment:${establishmentId}`).emit('sync:status', { status, message })
+  }
+
+  /**
+   * Emitir evento de caixa aberto
+   */
+  emitCaixaOpened(establishmentId: string, caixa: any) {
+    this.io?.to(`establishment:${establishmentId}`).emit('caixa:opened', caixa)
+  }
+
+  /**
+   * Emitir evento de caixa fechado
+   */
+  emitCaixaClosed(establishmentId: string, caixa: any) {
+    this.io?.to(`establishment:${establishmentId}`).emit('caixa:closed', caixa)
+  }
+
+  /**
+   * Emitir evento de sangria
+   */
+  emitSangria(establishmentId: string, movimentacao: any) {
+    this.io?.to(`establishment:${establishmentId}`).emit('caixa:sangria', movimentacao)
+  }
+
+  /**
+   * Emitir evento de reforço
+   */
+  emitReforco(establishmentId: string, movimentacao: any) {
+    this.io?.to(`establishment:${establishmentId}`).emit('caixa:reforco', movimentacao)
+  }
+
+  /**
+   * Emitir evento de produto deletado
+   */
+  emitProductDeleted(establishmentId: string, productId: string) {
+    this.io?.to(`establishment:${establishmentId}`).emit('product:deleted', { productId })
   }
 }
 

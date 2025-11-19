@@ -8,10 +8,12 @@ interface SyncState {
   pendingSales: number
   isOnline: boolean
   autoSync: boolean
+  syncInterval: number
   syncProducts: () => Promise<void>
   syncSales: () => Promise<void>
   syncAll: () => Promise<void>
   toggleAutoSync: () => void
+  setSyncInterval: (interval: number) => void
   checkOnlineStatus: () => void
 }
 
@@ -22,6 +24,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   pendingSales: 0,
   isOnline: navigator.onLine,
   autoSync: true,
+  syncInterval: 5 * 60 * 1000,
 
   checkOnlineStatus: () => {
     set({ isOnline: navigator.onLine })
@@ -110,17 +113,21 @@ export const useSyncStore = create<SyncState>((set, get) => ({
 
   toggleAutoSync: () => {
     set(state => ({ autoSync: !state.autoSync }))
+  },
+
+  setSyncInterval: (interval: number) => {
+    set({ syncInterval: interval })
   }
 }))
 
-// Auto sync every 5 minutes if enabled
+// Auto sync at configurable interval if enabled
 if (typeof window !== 'undefined') {
   setInterval(() => {
-    const { autoSync, isOnline } = useSyncStore.getState()
+    const { autoSync, isOnline, syncInterval } = useSyncStore.getState()
     if (autoSync && isOnline) {
       useSyncStore.getState().syncAll()
     }
-  }, 5 * 60 * 1000)
+  }, useSyncStore.getState().syncInterval)
 
   // Listen to online/offline events
   window.addEventListener('online', () => {

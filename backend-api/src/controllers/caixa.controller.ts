@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+// Request types module declaration is loaded globally from server.ts
 import { caixaService } from '../services/caixa.service'
 import { z } from 'zod'
 
@@ -16,18 +17,29 @@ const movimentacaoSchema = z.object({
   observacoes: z.string().optional(),
 })
 
+interface GetMovimentacoesQuery {
+  page?: string
+  limit?: string
+}
+
 class CaixaController {
   /**
    * POST /caixa/abrir
    */
   async abrirCaixa(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const user = (req as any).user
+      if (!req.user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Não autorizado',
+        })
+      }
+
       const body = abrirCaixaSchema.parse(req.body)
 
       const caixa = await caixaService.abrirCaixa(
-        user.establishmentId,
-        user.userId,
+        req.user.establishmentId,
+        req.user.userId,
         body.valorInicial
       )
 
@@ -35,10 +47,16 @@ class CaixaController {
         success: true,
         caixa,
       })
-    } catch (error: any) {
-      return reply.status(400).send({
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.status(400).send({
+          success: false,
+          message: error.message,
+        })
+      }
+      return reply.status(500).send({
         success: false,
-        message: error.message,
+        message: 'Erro interno do servidor',
       })
     }
   }
@@ -48,12 +66,18 @@ class CaixaController {
    */
   async fecharCaixa(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const user = (req as any).user
+      if (!req.user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Não autorizado',
+        })
+      }
+
       const body = fecharCaixaSchema.parse(req.body)
 
       const caixa = await caixaService.fecharCaixa(
-        user.establishmentId,
-        user.userId,
+        req.user.establishmentId,
+        req.user.userId,
         body.valorFinal,
         body.observacoes
       )
@@ -62,10 +86,16 @@ class CaixaController {
         success: true,
         caixa,
       })
-    } catch (error: any) {
-      return reply.status(400).send({
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.status(400).send({
+          success: false,
+          message: error.message,
+        })
+      }
+      return reply.status(500).send({
         success: false,
-        message: error.message,
+        message: 'Erro interno do servidor',
       })
     }
   }
@@ -75,12 +105,18 @@ class CaixaController {
    */
   async registrarSangria(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const user = (req as any).user
+      if (!req.user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Não autorizado',
+        })
+      }
+
       const body = movimentacaoSchema.parse(req.body)
 
       const movimentacao = await caixaService.registrarSangria(
-        user.establishmentId,
-        user.userId,
+        req.user.establishmentId,
+        req.user.userId,
         body.valor,
         body.observacoes
       )
@@ -89,10 +125,16 @@ class CaixaController {
         success: true,
         movimentacao,
       })
-    } catch (error: any) {
-      return reply.status(400).send({
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.status(400).send({
+          success: false,
+          message: error.message,
+        })
+      }
+      return reply.status(500).send({
         success: false,
-        message: error.message,
+        message: 'Erro interno do servidor',
       })
     }
   }
@@ -102,12 +144,18 @@ class CaixaController {
    */
   async registrarReforco(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const user = (req as any).user
+      if (!req.user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Não autorizado',
+        })
+      }
+
       const body = movimentacaoSchema.parse(req.body)
 
       const movimentacao = await caixaService.registrarReforco(
-        user.establishmentId,
-        user.userId,
+        req.user.establishmentId,
+        req.user.userId,
         body.valor,
         body.observacoes
       )
@@ -116,10 +164,16 @@ class CaixaController {
         success: true,
         movimentacao,
       })
-    } catch (error: any) {
-      return reply.status(400).send({
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.status(400).send({
+          success: false,
+          message: error.message,
+        })
+      }
+      return reply.status(500).send({
         success: false,
-        message: error.message,
+        message: 'Erro interno do servidor',
       })
     }
   }
@@ -129,9 +183,14 @@ class CaixaController {
    */
   async getCaixaAtual(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const user = (req as any).user
+      if (!req.user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Não autorizado',
+        })
+      }
 
-      const caixa = await caixaService.getCaixaAtual(user.establishmentId)
+      const caixa = await caixaService.getCaixaAtual(req.user.establishmentId)
 
       if (!caixa) {
         return reply.status(404).send({
@@ -144,10 +203,16 @@ class CaixaController {
         success: true,
         caixa,
       })
-    } catch (error: any) {
-      return reply.status(400).send({
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.status(400).send({
+          success: false,
+          message: error.message,
+        })
+      }
+      return reply.status(500).send({
         success: false,
-        message: error.message,
+        message: 'Erro interno do servidor',
       })
     }
   }
@@ -155,16 +220,23 @@ class CaixaController {
   /**
    * GET /caixa/movimentacoes
    */
-  async getMovimentacoes(req: FastifyRequest, reply: FastifyReply) {
+  async getMovimentacoes(
+    req: FastifyRequest<{ Querystring: GetMovimentacoesQuery }>,
+    reply: FastifyReply
+  ) {
     try {
-      const user = (req as any).user
-      const query = req.query as any
+      if (!req.user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Não autorizado',
+        })
+      }
 
-      const page = parseInt(query.page) || 1
-      const limit = parseInt(query.limit) || 20
+      const page = parseInt(req.query.page || '1') || 1
+      const limit = parseInt(req.query.limit || '20') || 20
 
       const result = await caixaService.getMovimentacoes(
-        user.establishmentId,
+        req.user.establishmentId,
         page,
         limit
       )
@@ -173,10 +245,16 @@ class CaixaController {
         success: true,
         ...result,
       })
-    } catch (error: any) {
-      return reply.status(400).send({
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.status(400).send({
+          success: false,
+          message: error.message,
+        })
+      }
+      return reply.status(500).send({
         success: false,
-        message: error.message,
+        message: 'Erro interno do servidor',
       })
     }
   }

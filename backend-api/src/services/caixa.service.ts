@@ -1,4 +1,5 @@
 import { prisma } from '../database/prisma'
+import { websocketService } from './websocket.service'
 
 export class CaixaService {
   /**
@@ -38,6 +39,8 @@ export class CaixaService {
         },
       },
     })
+
+    websocketService.emitCaixaOpened(establishmentId, caixa)
 
     return caixa
   }
@@ -91,12 +94,16 @@ export class CaixaService {
       data: { aberto: false },
     })
 
-    return {
+    const result = {
       ...fechamento,
       diferenca,
       valorEsperado: caixaAberto.saldoAtual,
       valorContado: valorFinal,
     }
+
+    websocketService.emitCaixaClosed(establishmentId, result)
+
+    return result
   }
 
   /**
@@ -152,6 +159,8 @@ export class CaixaService {
       data: { saldoAtual: novoSaldo },
     })
 
+    websocketService.emitSangria(establishmentId, sangria)
+
     return sangria
   }
 
@@ -202,6 +211,8 @@ export class CaixaService {
       where: { id: caixaAberto.id },
       data: { saldoAtual: novoSaldo },
     })
+
+    websocketService.emitReforco(establishmentId, reforco)
 
     return reforco
   }
